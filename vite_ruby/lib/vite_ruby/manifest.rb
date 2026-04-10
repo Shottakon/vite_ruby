@@ -42,10 +42,10 @@ class ViteRuby::Manifest
   # Public: Returns scripts, imported modules, and stylesheets for the specified
   # entrypoint files.
   def resolve_entries(*names, **options)
-    entries = names.map { |name| lookup!(name, **options) }
+    entries = names.map { |name| lookup!(File.join(config.entrypoints_dir, name), **options) }
     script_paths = entries.map { |entry| entry.fetch("file") }
 
-    imports = dev_server_running? ? [] : entries.flat_map { |entry| import_chunks_for(entry) }
+    imports = dev_server_running? ? [] : entries.flat_map { |entry| entry["imports"] }.compact
     {
       scripts: script_paths,
       imports: imports.filter_map { |entry| entry.fetch("file") }.uniq,
@@ -191,8 +191,7 @@ private
     # Explicit path, relative to the project root.
     name.sub(%r{^/(.+)$}) { return resolve_absolute_entry(Regexp.last_match(1)) }
 
-    # Sugar: Prefix with the entrypoints dir if the path is not nested.
-    name.include?("/") ? name : File.join(config.entrypoints_dir, name)
+    name
   end
 
   # Internal: Entry names in the manifest are relative to the Vite.js.
